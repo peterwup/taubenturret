@@ -36,9 +36,28 @@ clean-build: ## Clean build artifacts
 	@uv run python -c "import shutil; import os; shutil.rmtree('dist') if os.path.exists('dist') else None"
 
 .PHONY: run
-run: ## Run the taubenturret application
+run: ## Run the taubenturret application and save the process ID
 	@[ -d .venv ] || uv venv --system-site-packages
-	@uv run taubenturret
+	@bash -c 'uv run taubenturret > .taubenturret.log 2>&1 & echo $$! > .taubenturret.pid'
+	@echo "Started taubenturret (PID saved in .taubenturret.pid)"
+
+.PHONY: stop
+stop: ## Stop the taubenturret application using the saved PID
+	@if [ -f .taubenturret.pid ]; then \
+		kill "$(cat .taubenturret.pid)" || true; \
+		rm -f .taubenturret.pid; \
+		echo "Stopped taubenturret"; \
+	else \
+		echo "No PID file found"; \
+	fi
+
+.PHONY: status
+status: ## Check whether taubenturret is running
+	@if [ -f .taubenturret.pid ] && kill -0 "$$(cat .taubenturret.pid)" 2>/dev/null; then \
+		echo "taubenturret is running (PID $$(cat .taubenturret.pid))"; \
+	else \
+		echo "taubenturret is not running"; \
+	fi
 
 .PHONY: help
 help:
